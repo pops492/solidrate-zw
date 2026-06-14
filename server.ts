@@ -6,11 +6,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
-const app = express();
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
 const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
 const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || "";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -252,7 +248,7 @@ app.get("/api/market-data", async (req, res) => {
     if (ai && (!memoizedResult || (cacheNow - lastRefreshedAt) > CACHE_DURATION)) {
       try {
         // Option 4: Upgraded analytical evaluation engine logic
-        const analysisPrompt = `Analyze these recent crowdsourced ZiG parallel exchange rates from Zimbabwe: ${JSON.stringify(activeSubmissions.slice(0, 10))}. 
+        const analysisPrompt = `Analyze these recent crowdsourced ZiG parallel exchange rates from Zimbabwe: ${JSON.stringify(currentSubmissions.slice(0, 10))}. 
         The official central bank rate is currently stable around ${officialRate} ZiG. 
         Provide a dense 2-sentence macro-intelligence summary tracking:
         1. Current trajectory or regional variations (e.g., price spreads across distinct cities/hubs).

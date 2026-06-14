@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Home,
   PlusCircle,
@@ -89,32 +89,86 @@ export default function App() {
     }
   };
 
-  useEffect(() => {
-    fetchMarketData();
-    // Poll updates every 60 seconds
-    const interval = setInterval(fetchMarketData, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // Update this section inside the chart instantiator useEffect in src/App.tsx
+useEffect(() => {
+  if (!marketData || activeTab !== "dashboard" || !chartRef.current) return;
 
-  const handleRateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formRate || isNaN(Number(formRate))) {
-      setSubmitError("Please input a valid numeric rate");
-      return;
-    }
-    const val = Number(formRate);
-    if (val <= 0 || val > 150) {
-      setSubmitError("Please specify a realistic rate value between 1 and 150");
-      return;
-    }
-    if (!formLocation) {
-      setSubmitError("Please select your location");
-      return;
-    }
-    if (!formSource) {
-      setSubmitError("Please select the source type of this rate");
-      return;
-    }
+  const sortedSubmissions = [...marketData.submissions].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
+  const labels = sortedSubmissions.map((s: any) =>
+    new Date(s.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+  );
+  
+  // Extract data parameters for both vectors
+  const parallelDataPoints = sortedSubmissions.map((s: any) => s.rate);
+  const officialDataPoints = sortedSubmissions.map((s: any) => s.officialRate || marketData.officialRate);
+
+  const ctx = chartRef.current.getContext("2d");
+  if (!ctx) return;
+
+  if (chartInstance.current) {
+    chartInstance.current.destroy();
+  }
+
+  const GlobalChart = (window as any).Chart;
+  if (!GlobalChart) return;
+
+  chartInstance.current = new GlobalChart(ctx, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: "Parallel Street Rate",
+          data: parallelDataPoints,
+          borderColor: "#f59e0b", // Amber line
+          backgroundColor: "rgba(245, 158, 11, 0.02)",
+          borderWidth: 2,
+          pointBackgroundColor: "#f59e0b",
+          tension: 0.2,
+          fill: true,
+        },
+        {
+          label: "Official Interbank Rate",
+          data: officialDataPoints,
+          borderColor: "#38bdf8", // Sky blue line for clear distinction
+          backgroundColor: "transparent",
+          borderWidth: 2,
+          pointBackgroundColor: "#38bdf8",
+          borderDash: [4, 4], // Dashed representation to emphasize it as a reference baseline
+          tension: 0.1,
+          fill: false,
+        }
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { 
+        legend: { 
+          display: true,
+          labels: { color: "#94a3b8", font: { size: 11 } } 
+        } 
+      },
+      scales: {
+        x: {
+          grid: { color: "rgba(255, 255, 255, 0.03)" },
+          ticks: { color: "#94a3b8", font: { size: 10 } },
+        },
+        y: {
+          grid: { color: "rgba(255, 255, 255, 0.03)" },
+          ticks: { color: "#94a3b8", font: { size: 10 } },
+        },
+      },
+    },
+  });
+
+  return () => {
+    if (chartInstance.current) chartInstance.current.destroy();
+  };
+}, [marketData, activeTab]);
 
     try {
       setSubmitting(true);
@@ -148,7 +202,7 @@ export default function App() {
 
   const handleRatingSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (ratingValue === 0) return;
+    if (!ratingValue || ratingValue === 0) return;
     setRatingSubmitted(true);
     try {
       localStorage.setItem("solidrate_rated", "true");
