@@ -1,0 +1,8 @@
+{
+  "name": "Solidrate.zw",
+  "description": "A crowdsourced platform for Zimbabweans to track the real parallel market ZiG-to-USD exchange rate in real time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
